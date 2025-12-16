@@ -4,8 +4,6 @@ date: 2025-11-24
 tags:
   - status
 title: "Early Project Update: Model Compression and Edge ASR Directions"
-month: November
-year: 2025
 ---
 # {{ page.title }}
 As part of the industrial PhD I have to take a course aptly named "Industrial PhD Course". During this course I have had to think about *stakeholder management* a fair bit. Mapping out the stakeholders of the project and how to make sure that no one feels like they're missing out. 
