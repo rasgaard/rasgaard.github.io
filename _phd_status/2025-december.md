@@ -76,3 +76,6 @@ The course is set up to scale quite well to begin with. It's simply a collection
 The final piece of the scaling-puzzle relates to how students can get reliable and accurate feedback on an on-going basis. Nicki had experimented with an approach that would scrape the relevant repositories and evaluate them based on criteria such as "Are there Github Actions workflow files for CI/CD?", "Are requirements specified in requirements.txt or pyproject.toml?", "How many lines of code?", etc. My job has been to collect those scripts build up a package that provides a cohesive environment for further development. That has resulted in https://github.com/rasgaard/mlops-mentor/. 
 
 It is not completely done and I'm not totally comfortable using it as an official tool just yet. I would like to co-create it with the students during the course if possible. But, there are signs that it could be highly useful for the project phase. 
+
+## Holidays
+Last, but definitely not least, I spent time during the holidays to wind down and reflect on the year that has passed. I'm proud to say that I didn't read a single paper during these (almost) two weeks of vacation. It has been nice but I'm also ready to get back into the groove. 
