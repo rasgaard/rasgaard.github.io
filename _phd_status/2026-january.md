@@ -14,11 +14,18 @@ I had two main tasks: Firstly, helping out students and secondly developing a Py
 
 The course is super well-structured, allowing people who've never opened the terminal to follow along just fine. You're provided with step by step instructions for tools such as Docker, experiment trackers and Cloud infrastructure. The students form groups of about 3-5 people and do a project where the assignment is to do a full end-to-end machine learning project, putting together much of what they have learned throughout the exercises.
 
+### TA'ing in age of AI
 Throughout the three weeks there would always be a few TAs to either be physically present on campus or on Slack where students could ask questions and get help. I had been looking forward to it as I like the material quite a lot and was interested in what people struggle with. But there was not a lot of struggle. At least visible to the TAs. Turns out that LLMs have, in large part, taken the job of the TA as being a patient, helpful resource that's always on duty. Is that a good thing? I would argue yes, absolutely.
 
 I had some time to think about learning objectives and what makes you *good* at MLOps. One of the conclusions I made was that stamina, i.e. going at a problem for way longer than you had anticipated with unknown unknowns popping up left and right, and finally reaching a solution, is a key meta-learning from this course. There will always me compatibility issues and problems with dependency management. That is most likely [never going to completely disappear](https://nesbitt.io/2026/01/23/package-management-is-a-wicked-problem.html). So you learn to deal with them. And I believe that an important learning from this course is to have a clear vision of using a specific tool to solve a problem and going at it until all of the rough edges are dealt with and it finally *just works*. 
 
 That's why I think, for this course at least, that LLMs as TAs are a good thing. It's not really all that important that you understand the details of why tool X is incompatible with tool Y but you can fix it by introducing Z. It's important to learn to spot those patterns and decrease the feeling of helplessness the next time you're faced with software problems.
+
+### Scalable feedback system
+Nicki had put together a sort of leaderboard for the previous year's group projects. It would automatically collect information about every group's project repository in order to get a few high-level indicators for how the project was going for any particular group. This could be number of lines of code, inclusion of a requirements.txt-file, and so on. He wanted to expand this idea and have an LLM look at the repos as well to provide more qualitative feedback. I thought that it sounded like a fun idea.
+
+It culminated in the [rasgaard/mlops_mentor](https://github.com/rasgaard/mlops-mentor/) repository on GItHub, where I have collected Nicki's scripts and structured it so I hope it will be maintainable for next year's round of the course. The resulting feedback and statistic are saved to a HuggingFace dataset and presented in a [Gradio app](https://huggingface.co/spaces/rasgaard/DTU-MLOps-TA), also hosted on HuggingFace.
+
 ## Outreach
 One of the things I have been looking forward to with regards to starting a PhD is the networking. Being my supervisors only PhD student and focusing on topics that are not very well represented at the university puts me in kind of an awkward position in terms of collaborations. 
 
