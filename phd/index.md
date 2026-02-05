@@ -3,7 +3,7 @@ layout: default
 title: PhD Status
 ---
 ## Status Updates
-Once a month I hope to sit down and think about what have happened.
+Once a month I try to sit down and think about what have happened.
 
 {% assign posts = site.phd_status | sort: 'date' | reverse %}
 {% for status in posts %}
