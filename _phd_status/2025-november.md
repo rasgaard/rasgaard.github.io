@@ -14,6 +14,7 @@ I would like to try out making status updates accessible by anyone. This serves 
 3. An archive of what I have done and a place to jot down notes, papers, etc. This one is mostly for my own sake.
 
 As I haven't done this for the first month of the project in October I will try to include Oct. activities as well here. 
+
 ## Reading, Prototyping, and Soaking Up SOTA
 First two months of the project has passed. The main activities of this initial period can be summarized as scoping, reading and testing. We have a scope for what we would like to do: Compress Automatic Speech Recognition models - Whisper in this case - using pruning and quantization to understand how it affects the model. 
 
@@ -29,10 +30,12 @@ Here are some of my favorite papers I have been reading:
 - [Edge-ASR: Towards Low-Bit Quantization of Automatic Speech Recognition Models](https://www.semanticscholar.org/paper/Edge-ASR%3A-Towards-Low-Bit-Quantization-of-Automatic-Feng-Lin/45bb4cbb2c4064c848b23752ec7cb42563f6a700)
 
 My overall goal at this point in time is to build up an excellent foundation for further research.
+
 ## Recent PyTorch Posts on Sparsity
 I'm excited to see that the PyTorch blog chose to publish not just one but two posts about adding sparsity to the mix of model compression. 
 * [When Quantization Isn’t Enough: Why 2:4 Sparsity Matters ](https://pytorch.org/blog/when-quantization-isnt-enough-why-24-sparsity-matters/)
 * [Beyond Quantization: Bringing Sparse Inference to PyTorch](https://pytorch.org/blog/beyond-quantization-bringing-sparse-inference-to-pytorch/) 
+
 ## ASR Compression and Edge Deployment
 We needed something to focus on. Otherwise I felt that there would be a major risk of wandering around topics and not producing anything noteworthy. We chose compression and edge deployment of Automatic Speech Recognition (ASR) models - specifically Whisper. Voice is a common interface for Laerdal's simulation scenarios, making it a an obvious candidate. 
 

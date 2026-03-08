@@ -121,6 +121,7 @@ If you’re used to the Hugging Face Python library, Transformers.js can be an e
 - **Simplicity**: Deploy a working AI application with just plain HTML and JavaScript - no Python environment, package management or backend infrastructure needed.
 - **Scalability**: The computation happens on users' devices, distributing the workload across your user base rather than centralizing it on your servers.
 - **Free deployment**: Host your AI-powered web app anywhere that serves static files such as [Github Pages](https://pages.github.com/).
+
 ## What Can You Do Next?
 This is just a very basic starting point. It gets a little more complicated once you want more functionality as you have to use [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) but would recommend just sticking to the [tutorials](https://huggingface.co/docs/transformers.js/) in the documentation and reading those thoroughly. I can also just in general highly recommend checking out the [Transformers.js documentation](https://huggingface.co/docs/transformers.js/index), especially all of the [demos](https://huggingface.github.io/transformers.js/) and [examples](https://github.com/huggingface/transformers.js-examples) if you want to learn more.
 
