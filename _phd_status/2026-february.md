@@ -1,5 +1,5 @@
 ---
-title: MLOps Teaching Assistant and outreach
+title: Agents, Fragmentation, and a Conference Talk
 layout: default
 date: 2026-02-28
 tags:
