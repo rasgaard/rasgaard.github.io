@@ -34,15 +34,11 @@ Here's the abstract I sent in:
 
 ## Papers I've especially liked
 
-### [Layer pruning in LLMs](https://openreview.net/pdf/72eeca23221e8c89efea8668851038632d42559d.pdf)
+I have been trying to make it a habit that when I read a paper that I especially like I'll post it on Bluesky. The response has been very nice and has led to a deeper level of engagement. 
+### [Layer pruning in LLMs](https://openreview.net/pdf/72eeca23221e8c89efea8668851038632d42559d.pdf), [post](https://bsky.app/profile/rasgaard.com/post/3mexzopccf22f)
 Due to residual structures in Transformer-models it's possible that many layers contribute very little to the downstream performance of the network, allowing for removal those redundant layers with little impact.
-
-[https://bsky.app/profile/rasgaard.com/post/3mexzopccf22f](https://bsky.app/profile/rasgaard.com/post/3mexzopccf22f)
-### [Performance Per Watt](https://arxiv.org/pdf/2511.07885)
+### [Performance Per Watt](https://arxiv.org/pdf/2511.07885), [post](https://bsky.app/profile/rasgaard.com/post/3mfbvj34qws25)
 LLM cloud inference dominates usage, but should it? Local models and accelerators have improved massively over recent years. Perfect routing to best local model "reduce energy consumption by 80.4%, compute by 77.3%, and cost by 73.8% versus cloud-only deployment"
-
-[https://bsky.app/profile/rasgaard.com/post/3mfbvj34qws25](https://bsky.app/profile/rasgaard.com/post/3mfbvj34qws25)
-
 ## Local AI deployment ecosystem fragmentation
 
 This is from a discussion on the Danish Data Science Community [Slack](https://danskdatascie-o8m9638.slack.com/) where I posted the following:
