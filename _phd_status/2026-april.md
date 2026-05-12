@@ -1,7 +1,7 @@
 ---
-title: Meetups, Rapid Prototypes, and Summer Plans in Vienna
+title: Hosting Meetups, Building Prototypes and Summer Plans in Vienna
 layout: default
-date:
+date: 2026-04-30
 tags:
   - status
 ---
