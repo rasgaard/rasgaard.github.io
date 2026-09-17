@@ -1,5 +1,5 @@
 ---
-title:
+title: Weird workshop experience and slight pivot
 layout: default
 date: 2026-08-31
 tags:
