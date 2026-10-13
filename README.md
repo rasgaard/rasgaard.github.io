@@ -1,6 +1,6 @@
 # rasgaard.github.io
 
-Jekyll source for https://rasgaard.com. No README existed — this one is for coding agents (and humans) so you don't have to explore the repo.
+Jekyll source for https://rasgaard.com.
 
 ## Stack / build
 
