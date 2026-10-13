@@ -3,17 +3,17 @@ title: "Master's thesis: post-training quantization"
 layout: default
 date: 2026-07-31
 status: ongoing
-summary: Co-supervising an MSc thesis on PTQ intuition and novel quantization approaches.
+summary: Picking AI models today means trusting bar charts with no context. This thesis builds the understanding to choose well.
 ---
 
 # {{ page.title }}
 
 ## Goal
 
-Build genuine intuition for post-training quantization: how different PTQ methods behave on real models, and whether that understanding leads somewhere novel. General LLM benchmarking is the vehicle, not the destination.
+Choosing an AI model today means trusting benchmark charts that never say how the numbers were produced: which hardware, which software, which shortcuts. The thesis builds genuine understanding of what quantization does to models, so those choices stop being guesswork. Done right, that understanding could lead somewhere entirely new.
 
 ## Report
 
-One motivated student, broad scope, early days. The thesis mixes hands-on benchmarking of LLMs with digging into PTQ methods, with explicit room to experiment with new approaches if the intuition leads there.
+One motivated student, broad scope, early days: hands-on benchmarking of language models mixed with digging into post-training quantization methods, with explicit room to try novel approaches if the intuition leads there.
 
-No results yet. Excited to see where it goes over the next couple of months.
+No results yet. The exciting part is still ahead.

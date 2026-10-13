@@ -3,27 +3,26 @@ title: Whisper quantization sweep
 layout: default
 date: 2025-11-30
 status: dropped
-summary: TorchAO int8 + Wanda sparsity on Whisper-small, shelved when layer pruning proved far more effective.
+summary: "The obvious first try at shrinking speech recognition: smaller numbers, sparser weights. It mostly failed, instructively."
 ---
 
 # {{ page.title }}
 
 ## Goal
 
-Map the moderate-compression landscape for `Whisper-small` (244M params) on LibriSpeech: int8 quantization and 50% unstructured sparsity, aiming for the kind of overview tables the PyTorch blog produces for LLMs.
+Before cutting layers, try the obvious: shrink the model's numbers and zero out half its weights, then chart what survives. If the cheap tricks worked, nothing fancier would be needed.
 
 ## Report
 
-The numbers told a split story:
+Shrinking the numbers was essentially free: same accuracy at half the size. Zeroing half the weights was a disaster at 101% error, and retraining only partly resurrected it to around 18% against a 4% baseline:
 
-| Setup | Size | WER |
-| ----- | ---- | --- |
+| Setup | Size | Error rate |
+| ----- | ---- | ---------- |
 | Baseline | 1074 MB | **4.27%** |
-| Int8 weight-only | 578 MB | **4.24%** |
-| Wanda 50% unstructured | 1074 MB | **101.20%** |
-| … + 1 epoch calibration | 1074 MB | **17.75%** |
-| … + 2 epochs calibration | 1074 MB | **17.63%** |
+| Smaller numbers | 578 MB | **4.24%** |
+| Half weights zeroed | 1074 MB | **101.20%** |
+| … plus retraining | 1074 MB | **17.63%** |
 
-Quantization was essentially free; unstructured sparsity collapsed the model, and calibration only partly resurrected it. Getting started took help from TorchAO maintainer Jesse Cai via the GPU MODE Discord, much appreciated.
+Getting started took generous help from a maintainer of the compression toolkit, via the GPU MODE Discord community.
 
-**Why dropped:** two reasons. First, I wanted dedicated time on the edge-deployment branch rather than more sweeps. Second, layer pruning later proved *far* more effective for Whisper. Kept here so the dead end stays visible.
+**Why it is here:** dead ends are findings too. This one cleared the way for layer pruning, which worked far better, and it stays visible so nobody (including future me) repeats it.

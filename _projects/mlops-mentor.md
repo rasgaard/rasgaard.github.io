@@ -3,17 +3,17 @@ title: MLOps mentor
 layout: default
 date: 2026-01-31
 status: finished
-summary: Auto-scraping 450 student MLOps repos plus a Gradio app for scalable project feedback.
+summary: Every one of 450 students deserves feedback while they work. TAs cannot read 450 repos, so the reading got automated.
 ---
 
 # {{ page.title }}
 
 ## Goal
 
-Give ~450 MLOps students reliable, ongoing feedback on their group projects, without TAs having to read every single repository.
+Four hundred and fifty students doing course projects deserve feedback *while* they work, not after grades land. No teaching team can read that many repositories by hand, so the reading itself had to be automated.
 
 ## Report
 
-Collected my supervisor's scraping scripts into [rasgaard/mlops-mentor](https://github.com/rasgaard/mlops-mentor): repo mining for high-level indicators (CI workflow files, `requirements.txt`, lines of code), expanded with an LLM pass for qualitative feedback. Results land in a HuggingFace dataset, surfaced through a [Gradio app](https://huggingface.co/spaces/rasgaard/DTU-MLOps-TA).
+Built [rasgaard/mlops-mentor](https://github.com/rasgaard/mlops-mentor): repo mining for concrete signals (CI setup, dependency files, code volume) plus a language-model pass for qualitative feedback. Results flow into a public dataset and a [Gradio app](https://huggingface.co/spaces/rasgaard/DTU-MLOps-TA) anyone can browse.
 
-Two honest footnotes. First, I never got fully comfortable blessing it as an *official* tool; the hope was to co-create it with the students during the course. Second, TA-ing made one thing obvious: LLMs have largely absorbed the TA's old job as the patient, always-on helper. What the course really teaches now is *stamina*: going at dependency hell and incompatibilities until things just work.
+Two honest footnotes. It never quite became an official course tool; the hope was to shape it together with the students instead. And TA-ing made something obvious: language models have absorbed the TA's old role as the patient, always-on helper. What a course like this really teaches now is *stamina*, the art of wrestling dependency hell until things just work.
