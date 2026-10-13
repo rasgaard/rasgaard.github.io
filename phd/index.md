@@ -2,12 +2,12 @@
 layout: default
 title: PhD Status
 ---
-## Status Updates
+# Status Updates
 Once a month I try to sit down and think about what has happened.
 
 {% assign posts = site.phd_status | sort: 'date' | reverse %}
 {% for status in posts %}
-   - {{status.date | date: '%Y'}}, **{{status.date | date: '%B'}}** - <a href="{{status.url}}">{{status.title}}</a>
+   - {{status.date | date: '%Y'}}, **{{status.date | date: '%B'}}** - <a href="{{status.url}}">{{status.title}}</a>
 {% endfor %}
 ## About the project
 It is titled *"Edge deployment of deep neural networks via Model Compression for Healthcare Applications"* and is a collaboration between [Laerdal Medical](https://laerdal.com/) and the [Technical University of Denmark](https://www.dtu.dk/). It's a 3-year PhD going from October 1st 2025 to September 31st 2028.

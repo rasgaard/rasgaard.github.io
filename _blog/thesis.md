@@ -125,7 +125,7 @@ I tried to do a simple example on MNIST to get a visual feel for how the two equ
 
 ![Top training samples ordered by their influence score obtained with the dot-product variant of TracIn](/assets/attachments/thesis/most_influential.png)
 
-![Top training samples ordered by their influence score obtained with the cosine similarity variant of TracIn](attachments/thesis/most_influential_normalized.png)
+<!-- Missing figure: assets/attachments/thesis/most_influential_normalized.png was never transferred from Quarto (also had a relative path). Re-add as ![...](/assets/attachments/thesis/most_influential_normalized.png) if recovered. -->
 
 From these examples it is clear that the dot-product variant of TracIn attributes a high score to training samples that are outliers in some sense while the cosine similarity variant finds training samples that we can imagine conveys the same information as the test sample would have, had it been in the training set.
 

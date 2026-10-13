@@ -1,6 +1,6 @@
 ---
 layout: default
-title: PhD Status
+title: Blog
 ---
 
 # Blog posts
