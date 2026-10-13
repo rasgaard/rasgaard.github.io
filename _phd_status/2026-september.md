@@ -1,7 +1,7 @@
 ---
 title: Post-summer blues
 layout: default
-date: 2026-10-13
+date: 2026-09-30
 tags:
   - status
 ---
