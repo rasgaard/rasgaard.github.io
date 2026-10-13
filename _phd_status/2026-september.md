@@ -4,7 +4,6 @@ layout: default
 date: 2026-10-13
 tags:
   - status
-published: false
 ---
 
 # {{ page.title }}
