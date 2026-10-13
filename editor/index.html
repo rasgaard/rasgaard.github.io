@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rasgaard.com — local editor</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root { --bg:#faf8f5; --panel:#fff; --ink:#2b2620; --muted:#8a7f72; --line:#e5dccd; --accent:#9a3412; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--ink); height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; gap:10px; align-items:center; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header h1 { font-size:15px; margin:0 8px 0 0; }
+  header .git { margin-left:auto; display:flex; gap:6px; align-items:center; font-size:12px; }
+  #gitStatus { color:var(--muted); max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  main { flex:1; display:flex; min-height:0; }
+  aside { width:270px; background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:12px; }
+  aside h3 { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px; }
+  aside button.new { width:100%; margin:4px 0; padding:9px; border:1px solid var(--line); border-radius:8px; background:#fff7ed; cursor:pointer; font-size:13px; }
+  aside button.new:hover { background:#ffedd5; }
+  .file { display:block; width:100%; text-align:left; border:0; background:none; cursor:pointer; padding:6px 8px; border-radius:6px; font-size:13px; }
+  .file:hover { background:#f5f0e8; }
+  .file.active { background:#ffedd5; }
+  .file small { color:var(--muted); display:block; font-size:11px; }
+  section.edit { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .meta { display:flex; gap:8px; flex-wrap:wrap; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--line); align-items:center; }
+  .meta input { padding:7px 9px; border:1px solid var(--line); border-radius:7px; font-size:13px; }
+  #title { flex:2; min-width:180px; } #fpath { flex:2; min-width:180px; font-family:monospace; font-size:12px; }
+  #date { width:130px; } #tags { flex:1; min-width:120px; }
+  .toolbar { display:flex; gap:8px; padding:8px 14px; align-items:center; border-bottom:1px solid var(--line); background:var(--panel); font-size:12px; color:var(--muted); }
+  .toolbar button, header button { padding:6px 11px; border:1px solid var(--line); border-radius:7px; background:#fff; cursor:pointer; font-size:12.5px; }
+  .toolbar button.on, button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .panes { flex:1; display:flex; min-height:0; }
+  #md { flex:1; border:0; padding:16px; font:13.5px/1.6 ui-monospace,monospace; resize:none; outline:none; background:var(--bg); }
+  #preview { flex:1; min-width:0; border:0; border-left:1px solid var(--line); background:#fffef9; }
+  .hint { font-size:12px; color:var(--muted); padding:8px 14px; }
+  kbd { background:#eee; border-radius:4px; padding:0 5px; font-size:11px; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#1c1917; color:#fff; padding:9px 16px; border-radius:8px; font-size:13px; opacity:0; transition:opacity .2s; }
+</style>
+</head>
+<body>
+<header>
+  <h1>rasgaard.com editor</h1>
+  <span id="gitStatus">git: …</span>
+  <div class="git">
+    <input id="commitMsg" placeholder="commit message…" size="22" style="padding:6px 9px;border:1px solid var(--line);border-radius:7px;font-size:12px">
+    <button onclick="git('pull')">Pull</button>
+    <button onclick="gitCommit()">Commit</button>
+    <button onclick="git('push')">Push</button>
+  </div>
+</header>
+<main>
+  <aside>
+    <div id="nudge"></div>
+    <button class="new" onclick="newDoc('phd_status')">＋ New PhD update</button>
+    <button class="new" onclick="newDoc('blog')">＋ New blog post</button>
+    <h3>PhD status</h3><div id="listPhd"></div>
+    <h3>Blog</h3><div id="listBlog"></div>
+    <h3>One-off pages</h3><div id="listPages"></div>
+    <p class="hint">The lists on <i>phd/index</i> and <i>blog/index</i> regenerate automatically from your posts (Liquid loop) — just edit the text around them.</p>
+  </aside>
+  <section class="edit">
+    <div class="meta">
+      <input id="fpath" title="file path" placeholder="_phd_status/2026-october.md">
+      <input id="title" placeholder="Title">
+      <input id="date" type="date">
+      <input id="tags" placeholder="tags, comma separated">
+      <label style="font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer" title="Drafts stay out of the built site until unchecked">
+        <input type="checkbox" id="draft"> Draft
+      </label>
+    </div>
+    <div class="toolbar">
+      <button id="bEdit" class="on" onclick="view('edit')">Edit</button>
+      <button id="bSplit" class="on" onclick="view('split')">Split</button>
+      <button id="bPrev" onclick="view('prev')">Preview</button>
+      <span style="margin-left:8px"><kbd>⌘V</kbd> images to attach · select text + paste a URL to linkify</span>
+      <span style="flex:1"></span>
+      <span id="wordCount" style="color:var(--muted)">0 words</span>
+      <button onclick="checkLinks()">Check links</button>
+      <button class="primary" onclick="save()">Save <kbd>⌘S</kbd></button>
+    </div>
+    <div class="panes">
+      <textarea id="md" placeholder="Write markdown here…" spellcheck="false"></textarea>
+      <iframe id="preview" title="Site preview" sandbox="allow-scripts"></iframe>
+    </div>
+    <div class="hint" id="saveState">No file loaded.</div>
+  </section>
+</main>
+<div id="toast"></div>
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'split', curPath = '';
+
+const toast = m => { const t=$('toast'); t.textContent=m; t.style.opacity=1; clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity=0,2200); };
+const monthName = d => d.toLocaleString('en',{month:'long'}).toLowerCase();
+const todayISO = () => new Date().toISOString().slice(0,10);
+const slugify = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60) || 'untitled';
+
+async function api(url, opts={}) {
+  const r = await fetch(url, opts);
+  const j = await r.json().catch(()=>({error:'bad response'}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+async function refreshLists() {
+  const d = await api('/api/files');
+  const item = f => `<button class="file ${f.path===curPath?'active':''}" onclick="openFile('${f.path}')">${f.published===false?'📝 ':''}${esc(f.title||f.name)}<small>${esc(f.date||'')} · ${esc(f.name)}${f.published===false?' · draft':''}</small></button>`;
+  $('listPhd').innerHTML = d.phd_status.map(item).join('') || '<p class="hint">none yet</p>';
+  $('listBlog').innerHTML = d.blog.map(item).join('') || '<p class="hint">none yet</p>';
+  // monthly-cadence nudge: is there an update for the current month yet?
+  const t = new Date(), ym = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
+  const hasMonth = d.phd_status.some(f => (f.date||'').startsWith(ym));
+  $('nudge').innerHTML = hasMonth ? '' :
+    `<div style="background:#fff7ed;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:12.5px;margin-bottom:8px;cursor:pointer" onclick="newDoc('phd_status')">📅 No PhD update for ${t.toLocaleString('en',{month:'long'})} yet — start one →</div>`;
+  $('listPages').innerHTML = d.pages.map(p => `<button class="file ${p.path===curPath?'active':''}" onclick="openFile('${p.path}')">${esc(p.label)}</button>`).join('');
+}
+const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function openFile(path) {
+  const f = await api('/api/file?path='+encodeURIComponent(path));
+  curPath = f.path;
+  $('fpath').value = f.path; $('title').value = f.title||'';
+  $('date').value = (f.date||'').slice(0,10); $('tags').value = (f.tags||[]).join(', ');
+  $('draft').checked = f.published === false;
+  $('md').value = f.body||'';
+  $('saveState').textContent = 'Editing ' + f.path;
+  render(); refreshLists();
+}
+
+function newDoc(kind) {
+  const t = new Date();
+  if (kind === 'phd_status') {
+    curPath = '';
+    $('fpath').value = `_phd_status/${t.getFullYear()}-${monthName(t)}.md`;
+    $('tags').value = 'status';
+  } else {
+    $('fpath').value = `_blog/${slugify($('title').value) || 'new-post'}.md`;
+    $('tags').value = 'post';
+  }
+  $('title').value = ''; $('date').value = todayISO(); $('md').value = '';
+  $('draft').checked = false;
+  if (kind==='phd_status') $('md').value = '# {{ page.title }}\n\n';
+  else $('md').value = '# {{ page.title }}\n\n';
+  $('saveState').textContent = 'New ' + (kind==='phd_status'?'PhD update':'blog post') + ' — adjust filename, then Save.';
+  $('title').focus(); render(); refreshLists();
+}
+// keep blog filename in sync with title until saved
+$('title').addEventListener('input', () => {
+  if (!curPath && $('fpath').value.startsWith('_blog/')) $('fpath').value = `_blog/${slugify($('title').value)}.md`;
+});
+
+async function save() {
+  const path = $('fpath').value.trim();
+  if (!path) return toast('Set a file path first');
+  await api('/api/save', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    path, title:$('title').value, date:$('date').value,
+    tags:$('tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    published: !$('draft').checked,
+    body:$('md').value })});
+  curPath = path;
+  $('saveState').textContent = 'Saved ' + path + ' · ' + new Date().toLocaleTimeString();
+  toast('Saved ' + path); refreshLists(); gitStatus();
+  const issues = await checkLinks(true);
+  if (issues.length) toast(`Saved — but ${issues.length} broken link${issues.length===1?'':'s'} (see Check links)`);
+}
+
+// Verify local /assets/... refs in the live text resolve, flag relative paths.
+async function checkLinks(quiet=false) {
+  const text = $('md').value || '';
+  const refs = new Set();
+  for (const m of text.matchAll(/\]\(([^)\s]+)\)/g)) refs.add(m[1]);
+  for (const m of text.matchAll(/<img[^>]+src="([^"]+)"/g)) refs.add(m[1]);
+  const issues = [];
+  for (const u of refs) {
+    if (/^(https?:|mailto:|#|data:)/.test(u)) continue;
+    if (!u.startsWith('/assets/')) { issues.push(`${u} — relative path, likely broken`); continue; }
+    try { const r = await fetch(u, {method:'GET'}); if (!r.ok) issues.push(`${u} — ${r.status}`); }
+    catch { issues.push(`${u} — not found`); }
+  }
+  if (!quiet) toast(issues.length ? 'Broken: ' + issues.join(' · ') : `All ${refs.size} link(s) OK`);
+  $('saveState').textContent = issues.length
+    ? `⚠ ${issues.length} broken link(s): ${issues.join(' · ')}`
+    : ($('fpath').value ? `Editing ${curPath||$('fpath').value} — links OK` : 'No file loaded.');
+  return issues;
+}
+
+function countWords() {
+  const text = ($('md').value || '')
+    .replace(/```[\s\S]*?```/g, ' ')   // fenced code blocks
+    .replace(/`[^`]*`/g, ' ')           // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // images
+    .replace(/<!--[\s\S]*?-->/g, ' ')   // comments
+    .replace(/[#>*\-+|]/g, ' ');        // markdown punctuation
+  const n = (text.match(/[A-Za-z0-9\u00C0-\u024F'-]+/g) || []).length;
+  const mins = Math.max(1, Math.round(n / 200));
+  $('wordCount').textContent = `${n} word${n===1?'':'s'} · ~${mins} min read`;
+}
+function render() {
+  countWords();
+  // Preview inside the real site shell (_layouts/default.html + assets/css/style.css),
+  // so it looks like the published page. {{ page.title }} is resolved from the Title field.
+  const title = $('title').value || 'Untitled';
+  const tags = $('tags').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const raw = ($('md').value || '*nothing yet*').replace(/\{\{\s*page\.title\s*\}\}/g, title);
+  const body = marked.parse(raw);
+  const hasCode = tags.includes('code'), hasMath = tags.includes('math');
+  $('preview').srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">`
+    + `<meta name="viewport" content="width=device-width, initial-scale=1">`
+    + `<base href="http://localhost:8001/" target="_blank">`
+    + `<title>${esc(title)} | Rasmus Aagaard</title>`
+    + `<link rel="stylesheet" href="/assets/css/style.css">`
+    + (hasCode ? `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">` : ``)
+    + (hasMath ? `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">` : ``)
+    + `</head><body>`
+    + `<nav class="site-nav"><a href="https://rasgaard.com/" class="site-name">Rasmus Aagaard</a>`
+    + `<div class="nav-links"><a href="https://rasgaard.com/phd/">PhD</a><a href="https://rasgaard.com/blog/">Blog</a></div></nav>`
+    + `<main><article>${body}</article></main>`
+    + (hasCode ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"><\/script>` : ``)
+    + (hasMath ? `<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
+<script>renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});<\/script>` : ``)
+    + `</body></html>`;
+}
+$('md').addEventListener('input', render);
+$('title').addEventListener('input', render);
+$('tags').addEventListener('input', render);
+
+function view(m) {
+  mode = m;
+  for (const [b,v] of [['bEdit','edit'],['bSplit','split'],['bPrev','prev']]) $(b).classList.toggle('on', m===v || (m==='split'&&(v==='edit'||v==='split') && false));
+  $('bEdit').classList.toggle('on', m!=='prev');
+  $('bSplit').classList.toggle('on', m==='split');
+  $('bPrev').classList.toggle('on', m==='prev');
+  $('md').style.display = m==='prev' ? 'none' : '';
+  $('preview').style.display = m==='edit' ? 'none' : '';
+  if (m!=='edit') render();
+}
+function applyMode(){ view(mode); }
+
+// --- images: paste + drag-drop ---
+$('md').addEventListener('paste', e => {
+  const imgs = [...(e.clipboardData?.items||[])].filter(i=>i.type.startsWith('image/'));
+  if (imgs.length) {
+    e.preventDefault();
+    imgs.forEach(i => uploadImage(i.getAsFile()));
+    return;
+  }
+  // linkify: selected text + pasted URL -> [text](url)
+  const el = $('md'), s = el.selectionStart ?? 0, en = el.selectionEnd ?? 0;
+  if (s === en) return; // no selection: normal paste
+  const text = (e.clipboardData?.getData('text/plain') || '').trim();
+  if (!/^https?:\/\/\S+$/i.test(text)) return; // not a bare URL: normal paste
+  e.preventDefault();
+  const sel = el.value.slice(s, en);
+  el.value = el.value.slice(0, s) + `[${sel}](${text})` + el.value.slice(en);
+  el.selectionStart = el.selectionEnd = s + sel.length + text.length + 4;
+  el.focus(); render();
+});
+$('md').addEventListener('dragover', e => { e.preventDefault(); });
+$('md').addEventListener('drop', e => {
+  const files = [...(e.dataTransfer?.files||[])].filter(f=>f.type.startsWith('image/'));
+  if (!files.length) return;
+  e.preventDefault(); files.forEach(uploadImage);
+});
+function insertAtCursor(text) {
+  const el = $('md'), s = el.selectionStart ?? el.value.length;
+  el.value = el.value.slice(0,s) + text + el.value.slice(el.selectionEnd ?? s);
+  el.focus(); render();
+}
+async function uploadImage(file) {
+  const docPath = ($('fpath').value||'').trim();
+  if (!docPath) return toast('Set the file path before adding images');
+  insertAtCursor(`\n<!-- uploading ${file.name||'image'}… -->\n`);
+  const dataUrl = await new Promise(res => { const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); });
+  try {
+    const j = await api('/api/upload', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({docPath, filename:file.name||'pasted.png', dataUrl})});
+    const alt = prompt('Alt text — one-line description of the image:', file.name ? file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ') : '') ?? '';
+    $('md').value = $('md').value.replace(`\n<!-- uploading ${file.name||'image'}… -->\n`, `\n![${alt.replace(/[\[\]]/g,'')}](${j.url})\n`);
+    render(); toast('Image saved → ' + j.url);
+  } catch(err) { toast('Upload failed: '+err.message); }
+}
+
+// --- git ---
+async function gitStatus() {
+  try {
+    const g = await api('/api/git/status');
+    const first = (g.status||'').split('\n')[0] || 'clean';
+    $('gitStatus').textContent = 'git: ' + first + (g.status.includes('\n') ? ` (+${g.status.split('\n').length-1} files)` : '');
+    $('gitStatus').title = g.status + '\n\n' + g.log;
+  } catch { $('gitStatus').textContent = 'git: unavailable'; }
+}
+async function git(action) {
+  toast(action==='pull'?'Pulling…':'Pushing…');
+  try {
+    const j = await api('/api/git', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action})});
+    toast(j.output || 'done'); gitStatus();
+  } catch(e){ toast(e.message); }
+}
+async function gitCommit() {
+  try {
+    const j = await api('/api/git', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'commit', message:$('commitMsg').value})});
+    toast(j.output || 'committed'); $('commitMsg').value=''; gitStatus();
+  } catch(e){ toast(e.message); }
+}
+
+document.addEventListener('keydown', e => { if ((e.metaKey||e.ctrlKey) && e.key==='s') { e.preventDefault(); save(); } });
+applyMode(); refreshLists(); gitStatus(); render();
+setInterval(gitStatus, 15000);
+</script>
+</body>
+</html>

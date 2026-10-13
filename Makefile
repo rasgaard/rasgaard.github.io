@@ -1,4 +1,4 @@
-.PHONY: help serve install build clean
+.PHONY: help serve install build clean editor
 
 help:
 	@echo "Available commands:"
@@ -6,6 +6,7 @@ help:
 	@echo "  make serve    - Start local development server"
 	@echo "  make build    - Build the site"
 	@echo "  make clean    - Clean build artifacts"
+	@echo "  make editor   - Start local markdown editor (http://localhost:8001)"
 
 install:
 	gem install bundler
@@ -19,3 +20,6 @@ build:
 
 clean:
 	bundle exec jekyll clean
+
+editor:
+	python3 editor/server.py

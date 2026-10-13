@@ -1,9 +1,15 @@
 # Site settings
 title: Rasmus Aagaard
 description: Industrial PhD student researching model compression and on-device AI deployment
+url: https://rasgaard.com
 
 # Build settings
 markdown: kramdown
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
 
 # Collections
 collections:
@@ -13,3 +19,7 @@ collections:
   blog:
     output: true
     permalink: /blog/:name/
+
+# Local editor (not part of the site)
+exclude:
+  - editor/
