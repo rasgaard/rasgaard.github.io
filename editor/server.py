@@ -25,16 +25,26 @@ PORT = int(os.environ.get("EDITOR_PORT", "8001"))
 COLLECTIONS = {
     "phd_status": ROOT / "_phd_status",
     "blog": ROOT / "_blog",
+    "projects": ROOT / "_projects",
 }
 PAGES = [
     {"label": "Home (index.md)", "path": "index.md"},
     {"label": "PhD index (phd/index.md)", "path": "phd/index.md"},
     {"label": "Blog index (blog/index.md)", "path": "blog/index.md"},
+    {"label": "Projects index (projects/index.md)", "path": "projects/index.md"},
 ]
 ATTACHMENTS = ROOT / "assets" / "attachments"
 
 
 # ---------- frontmatter helpers (tiny YAML subset: title/layout/date/tags) ----------
+
+def _unquote(v):
+    """Strip one layer of matching surrounding quotes from a scalar."""
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        inner = v[1:-1]
+        return inner.replace('\\"', '"').replace("\\\\", "\\") if v[0] == '"' else inner
+    return v
+
 
 def split_frontmatter(text):
     """Return (fm_dict, body). fm_dict has title/layout/date/tags(raw str)."""
@@ -55,23 +65,41 @@ def split_frontmatter(text):
                 tags = []
                 i += 1
                 while i < len(lines) and re.match(r"^\s*-\s+", lines[i]):
-                    tags.append(re.sub(r"^\s*-\s+", "", lines[i]).strip())
+                    tags.append(_unquote(re.sub(r"^\s*-\s+", "", lines[i]).strip()))
                     i += 1
                 fm["tags"] = tags
                 continue
-            fm[key] = val
+            fm[key] = _unquote(val)
         i += 1
     return fm, body
 
 
-def build_file(title, layout, date, tags, body, published=True):
+# Extra frontmatter keys kept per collection (edited via the form, preserved on save)
+EXTRA_FIELDS = {
+    "_projects": ["status", "summary"],
+}
+KNOWN_KEYS = {"title", "layout", "date", "tags", "published"}
+
+
+def _yaml_str(v):
+    """Quote a scalar when it contains anything YAML would choke on (e.g. ': ')."""
+    v = str(v)
+    if v == "" or re.search(r"[:#\[\]{},&*!|>'\"%@`]|^\s|\s$|^-", v) or "\n" in v:
+        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return v
+
+
+def build_file(title, layout, date, tags, body, published=True, extra=None):
     tags = tags or []
-    out = ["---", f"title: {title}", f"layout: {layout or 'default'}"]
+    out = ["---", f"title: {_yaml_str(title)}", f"layout: {_yaml_str(layout or 'default')}"]
     if date:
-        out.append(f"date: {date}")
+        out.append(f"date: {_yaml_str(date)}")
     if tags:
         out.append("tags:")
-        out.extend(f"  - {t}" for t in tags)
+        out.extend(f"  - {_yaml_str(t)}" for t in tags)
+    for k, v in (extra or {}).items():
+        if v:
+            out.append(f"{k}: {_yaml_str(v)}")
     if not published:
         out.append("published: false")
     out.append("---")
@@ -95,13 +123,20 @@ def safe_path(rel):
 def allowed_edit_path(rel):
     p = safe_path(rel)
     rp = str(p.relative_to(ROOT))
-    if rp.startswith(("_phd_status/", "_blog/", "phd/index.md", "blog/index.md", "index.md")):
+    if rp.startswith(("_phd_status/", "_blog/", "_projects/",
+                      "phd/index.md", "blog/index.md", "projects/index.md", "index.md")):
         return p
-    raise ValueError("only _phd_status, _blog and index pages are editable")
+    raise ValueError("only _phd_status, _blog, _projects and index pages are editable")
+
+
+def extras_for(rel, fm):
+    """Extra editable fields for rel's collection, from parsed fm (or blanks)."""
+    coll = rel.split("/")[0]
+    return {k: fm.get(k, "") for k in EXTRA_FIELDS.get(coll, [])}
 
 
 def list_files():
-    data = {"phd_status": [], "blog": [], "pages": []}
+    data = {"phd_status": [], "blog": [], "projects": [], "pages": []}
     for key, d in COLLECTIONS.items():
         if not d.exists():
             continue
@@ -111,13 +146,15 @@ def list_files():
             except OSError:
                 continue
             fm, _ = split_frontmatter(text)
-            data[key].append({
+            entry = {
                 "path": str(f.relative_to(ROOT)),
                 "name": f.name,
                 "title": fm.get("title", f.stem),
                 "date": fm.get("date", ""),
                 "published": str(fm.get("published", "true")).lower() != "false",
-            })
+            }
+            entry.update(extras_for(entry["path"], fm))
+            data[key].append(entry)
         # newest first by date string (YYYY-MM-DD sorts fine); fallback name
         data[key].sort(key=lambda e: (e["date"] or e["name"]), reverse=True)
     for pg in PAGES:
@@ -193,13 +230,15 @@ class Handler(BaseHTTPRequestHandler):
                 tags = fm.get("tags", [])
                 if isinstance(tags, str):
                     tags = [tags]
-                self._json({
+                resp = {
                     "path": rel, "title": fm.get("title", ""),
                     "layout": fm.get("layout", "default"),
                     "date": fm.get("date", ""),
                     "tags": tags, "body": body,
                     "published": str(fm.get("published", "true")).lower() != "false",
-                })
+                }
+                resp.update(extras_for(rel, fm))
+                self._json(resp)
             except ValueError as e:
                 self._json({"error": str(e)}, 403)
             except Exception as e:
@@ -246,13 +285,30 @@ class Handler(BaseHTTPRequestHandler):
                 published = d.get("published", True)
                 if isinstance(published, str):
                     published = published.lower() not in ("false", "no", "0")
+                # extra per-collection fields (status/summary/image…); preserve
+                # existing values for anything the client didn't send
+                coll = rel.split("/")[0]
+                extra = {}
+                if p.exists():
+                    old_fm, _ = split_frontmatter(p.read_text())
+                    for k in EXTRA_FIELDS.get(coll, []):
+                        if old_fm.get(k):
+                            extra[k] = old_fm[k]
+                for k in EXTRA_FIELDS.get(coll, []):
+                    if k in d:  # client owns the field: set or clear it
+                        v = d.get(k)
+                        v = v.strip() if isinstance(v, str) else v
+                        if v:
+                            extra[k] = v
+                        else:
+                            extra.pop(k, None)
                 # PhD updates conventionally start with "# {{ page.title }}"
                 if rel.startswith("_phd_status/") and not p.exists() and body and not body.lstrip().startswith("#"):
                     body = "# {{ page.title }}\n\n" + body
-                if rel.startswith("_blog/") and not p.exists() and body and not body.lstrip().startswith("#"):
+                if rel.startswith(("_blog/", "_projects/")) and not p.exists() and body and not body.lstrip().startswith("#"):
                     body = "# {{ page.title }}\n\n" + body
                 p.parent.mkdir(parents=True, exist_ok=True)
-                p.write_text(build_file(title, layout, date, tags, body, published))
+                p.write_text(build_file(title, layout, date, tags, body, published, extra))
                 self._json({"ok": True, "path": rel})
             except ValueError as e:
                 self._json({"error": str(e)}, 403)
@@ -308,12 +364,12 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"ok": r.returncode == 0, "output": (r.stdout + r.stderr).strip()})
                 elif action == "commit":
                     msg = (d.get("message") or "").strip() or f"site update {datetime.date.today().isoformat()}"
-                    a = run_git(["add", "-A", "--", "_phd_status", "_blog", "phd", "blog", "index.md", "assets"])
+                    a = run_git(["add", "-A", "--", "_phd_status", "_blog", "_projects", "phd", "blog", "projects", "index.md", "assets"])
                     if a.returncode != 0:
                         self._json({"ok": False, "output": a.stderr.strip()})
                         return
                     # nothing to commit?
-                    s = run_git(["status", "--porcelain", "--", "_phd_status", "_blog", "phd", "blog", "index.md", "assets"]).stdout.strip()
+                    s = run_git(["status", "--porcelain", "--", "_phd_status", "_blog", "_projects", "phd", "blog", "projects", "index.md", "assets"]).stdout.strip()
                     if not s:
                         self._json({"ok": True, "output": "nothing to commit"})
                         return
@@ -321,6 +377,30 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"ok": c.returncode == 0, "output": (c.stdout + c.stderr).strip()})
                 else:
                     self._json({"error": "unknown action"}, 400)
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+
+        if path == "/api/delete":
+            import shutil
+            try:
+                d = self._read_json()
+                rel = d.get("path", "")
+                p = safe_path(rel)
+                rp = str(p.relative_to(ROOT))
+                # collection entries only — never index pages, config, or code
+                if (not rp.startswith(("_phd_status/", "_blog/", "_projects/"))
+                        or "/" not in rp or p.suffix != ".md" or not p.exists()):
+                    self._json({"error": "can only delete saved entries"}, 403)
+                    return
+                p.unlink()
+                # clean up the entry's own attachment folder, if any
+                att = ATTACHMENTS / p.stem
+                if att.is_dir():
+                    shutil.rmtree(att)
+                self._json({"ok": True, "path": rel})
+            except ValueError as e:
+                self._json({"error": str(e)}, 403)
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return

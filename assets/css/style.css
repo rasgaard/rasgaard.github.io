@@ -290,3 +290,102 @@ img {
 		padding-top: 8px;
 	}
 }
+
+/* Project directory: filter bar */
+.filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	margin: 1.2em 0 1.5em 0;
+}
+
+.filter-btn {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	font-size: 0.85em;
+	padding: 0.35em 0.9em;
+	border: 1px solid var(--border-color);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--accent-color);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.filter-btn:hover {
+	border-bottom-color: var(--accent-color);
+}
+
+.filter-btn.active {
+	background: var(--accent-color);
+	border-color: var(--accent-color);
+	color: var(--bg-color);
+}
+
+/* Project directory: cards */
+.proj-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1em;
+	margin: 1em 0;
+}
+
+@media (max-width: 768px) {
+	.proj-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.proj-card {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	padding: 1.2em;
+}
+
+.proj-card:hover {
+	border-bottom-color: var(--border-color);
+	background: #fffdf5;
+}
+
+.proj-card h2 {
+	margin-top: 0.4em;
+	font-size: 1.15em;
+}
+
+.proj-card p {
+	margin-bottom: 0;
+	font-size: 0.9em;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.proj-meta {
+	margin-top: auto;
+	padding-top: 0.8em;
+	font-size: 0.8em;
+	color: var(--accent-color);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Status pills */
+.pill {
+	display: inline-block;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	font-size: 0.72em;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	padding: 0.15em 0.65em;
+	border-radius: 999px;
+	border: 1px solid var(--border-color);
+	color: var(--accent-color);
+}
+
+.pill-idea {
+	border-style: dashed;
+}
+
+.pill-dropped {
+	opacity: 0.65;
+	text-decoration: line-through;
+}

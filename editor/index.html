@@ -18,6 +18,10 @@
   aside h3 { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px; }
   aside button.new { width:100%; margin:4px 0; padding:9px; border:1px solid var(--line); border-radius:8px; background:#fff7ed; cursor:pointer; font-size:13px; }
   aside button.new:hover { background:#ffedd5; }
+  #search { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; margin:2px 0 6px; }
+  details.sec { margin:8px 0; }
+  details.sec > summary { cursor:pointer; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); padding:6px 2px; list-style-position:inside; }
+  details.sec > summary .cnt { opacity:.7; }
   .file { display:block; width:100%; text-align:left; border:0; background:none; cursor:pointer; padding:6px 8px; border-radius:6px; font-size:13px; }
   .file:hover { background:#f5f0e8; }
   .file.active { background:#ffedd5; }
@@ -52,11 +56,26 @@
 <main>
   <aside>
     <div id="nudge"></div>
-    <button class="new" onclick="newDoc('phd_status')">＋ New PhD update</button>
-    <button class="new" onclick="newDoc('blog')">＋ New blog post</button>
-    <h3>PhD status</h3><div id="listPhd"></div>
-    <h3>Blog</h3><div id="listBlog"></div>
-    <h3>One-off pages</h3><div id="listPages"></div>
+    <input id="search" placeholder="Filter entries…" autocomplete="off">
+    <details class="sec" id="secPhd" open>
+      <summary>PhD status <span class="cnt" id="cntPhd"></span></summary>
+      <button class="new" onclick="newDoc('phd_status')">＋ New PhD update</button>
+      <div id="listPhd"></div>
+    </details>
+    <details class="sec" id="secBlog">
+      <summary>Blog <span class="cnt" id="cntBlog"></span></summary>
+      <button class="new" onclick="newDoc('blog')">＋ New blog post</button>
+      <div id="listBlog"></div>
+    </details>
+    <details class="sec" id="secProjects">
+      <summary>Projects <span class="cnt" id="cntProjects"></span></summary>
+      <button class="new" onclick="newDoc('projects')">＋ New project</button>
+      <div id="listProjects"></div>
+    </details>
+    <details class="sec" id="secPages">
+      <summary>One-off pages</summary>
+      <div id="listPages"></div>
+    </details>
     <p class="hint">The lists on <i>phd/index</i> and <i>blog/index</i> regenerate automatically from your posts (Liquid loop) — just edit the text around them.</p>
   </aside>
   <section class="edit">
@@ -69,6 +88,15 @@
         <input type="checkbox" id="draft"> Draft
       </label>
     </div>
+    <div class="meta" id="projFields" style="display:none;padding-top:0">
+      <select id="fstatus" title="project status" style="padding:7px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px">
+        <option value="ongoing">On-going</option>
+        <option value="finished">Finished</option>
+        <option value="idea">Idea</option>
+        <option value="dropped">Dropped</option>
+      </select>
+      <input id="fsummary" placeholder="One-line summary (card text)" style="flex:2;min-width:180px">
+    </div>
     <div class="toolbar">
       <button id="bEdit" class="on" onclick="view('edit')">Edit</button>
       <button id="bSplit" class="on" onclick="view('split')">Split</button>
@@ -78,6 +106,7 @@
       <span id="wordCount" style="color:var(--muted)">0 words</span>
       <button onclick="checkLinks()">Check links</button>
       <button class="primary" onclick="save()">Save <kbd>⌘S</kbd></button>
+      <button onclick="del()" title="Delete this entry permanently" style="color:#b91c1c">Delete</button>
     </div>
     <div class="panes">
       <textarea id="md" placeholder="Write markdown here…" spellcheck="false"></textarea>
@@ -108,6 +137,13 @@ async function refreshLists() {
   const item = f => `<button class="file ${f.path===curPath?'active':''}" onclick="openFile('${f.path}')">${f.published===false?'📝 ':''}${esc(f.title||f.name)}<small>${esc(f.date||'')} · ${esc(f.name)}${f.published===false?' · draft':''}</small></button>`;
   $('listPhd').innerHTML = d.phd_status.map(item).join('') || '<p class="hint">none yet</p>';
   $('listBlog').innerHTML = d.blog.map(item).join('') || '<p class="hint">none yet</p>';
+  $('listProjects').innerHTML = (d.projects||[]).map(f =>
+    `<button class="file ${f.path===curPath?'active':''}" onclick="openFile('${f.path}')">${f.published===false?'📝 ':''}${esc(f.title||f.name)}<small>${esc(f.status||'idea')} · ${esc(f.date||'')} · ${esc(f.name)}${f.published===false?' · draft':''}</small></button>`
+  ).join('') || '<p class="hint">none yet</p>';
+  $('cntPhd').textContent = `(${d.phd_status.length})`;
+  $('cntBlog').textContent = `(${(d.blog||[]).length})`;
+  $('cntProjects').textContent = `(${(d.projects||[]).length})`;
+  applySearch();
   // monthly-cadence nudge: is there an update for the current month yet?
   const t = new Date(), ym = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
   const hasMonth = d.phd_status.some(f => (f.date||'').startsWith(ym));
@@ -117,16 +153,55 @@ async function refreshLists() {
 }
 const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// --- collapsible sidebar sections (state remembered) + search ---
+const SEC_IDS = ['secPhd', 'secBlog', 'secProjects', 'secPages'];
+function loadSecState() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('editorSecs') || '{}'); } catch {}
+  const defaults = {secPhd: true, secBlog: false, secProjects: false, secPages: false};
+  for (const id of SEC_IDS) $(id).open = saved[id] ?? defaults[id];
+}
+function saveSecState() {
+  const s = {};
+  for (const id of SEC_IDS) s[id] = $(id).open;
+  try { localStorage.setItem('editorSecs', JSON.stringify(s)); } catch {}
+}
+for (const id of SEC_IDS) $(id).addEventListener('toggle', () => {
+  if (quietToggle) return;
+  if ($(id).open) SEC_IDS.forEach(o => { if (o !== id) $(o).open = false; }); // accordion: one open at a time
+  saveSecState();
+});
+let quietToggle = false;
+function applySearch() {
+  const q = ($('search').value||'').trim().toLowerCase();
+  document.querySelectorAll('aside .file').forEach(b => {
+    b.style.display = (!q || b.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+  quietToggle = true;
+  if (q) SEC_IDS.forEach(id => $(id).open = true); // search sees everything…
+  else loadSecState();                             // …clearing restores your folded state
+  quietToggle = false;
+}
+$('search').addEventListener('input', applySearch);
+loadSecState();
+
 async function openFile(path) {
   const f = await api('/api/file?path='+encodeURIComponent(path));
   curPath = f.path;
   $('fpath').value = f.path; $('title').value = f.title||'';
   $('date').value = (f.date||'').slice(0,10); $('tags').value = (f.tags||[]).join(', ');
   $('draft').checked = f.published === false;
+  if (f.status !== undefined) $('fstatus').value = f.status || 'idea';
+  if (f.summary !== undefined) $('fsummary').value = f.summary || '';
+  updateProjFields();
   $('md').value = f.body||'';
   $('saveState').textContent = 'Editing ' + f.path;
   render(); refreshLists();
 }
+
+function isProjectPath() { return ($('fpath').value||'').startsWith('_projects/'); }
+function updateProjFields() { $('projFields').style.display = isProjectPath() ? '' : 'none'; }
+$('fpath').addEventListener('input', updateProjFields);
 
 function newDoc(kind) {
   const t = new Date();
@@ -134,20 +209,27 @@ function newDoc(kind) {
     curPath = '';
     $('fpath').value = `_phd_status/${t.getFullYear()}-${monthName(t)}.md`;
     $('tags').value = 'status';
+  } else if (kind === 'projects') {
+    curPath = '';
+    $('fpath').value = `_projects/${slugify($('title').value) || 'new-project'}.md`;
+    $('tags').value = 'project';
+    $('fstatus').value = 'idea';
+    $('fsummary').value = '';
   } else {
     $('fpath').value = `_blog/${slugify($('title').value) || 'new-post'}.md`;
     $('tags').value = 'post';
   }
   $('title').value = ''; $('date').value = todayISO(); $('md').value = '';
   $('draft').checked = false;
-  if (kind==='phd_status') $('md').value = '# {{ page.title }}\n\n';
+  if (kind==='projects') $('md').value = '# {{ page.title }}\n\n## Goal\n\nWhat does this project try to accomplish?\n\n## Report\n\nHow is it going — or, if finished or dropped, how did it go?\n';
   else $('md').value = '# {{ page.title }}\n\n';
-  $('saveState').textContent = 'New ' + (kind==='phd_status'?'PhD update':'blog post') + ' — adjust filename, then Save.';
-  $('title').focus(); render(); refreshLists();
+  $('saveState').textContent = 'New ' + (kind==='phd_status'?'PhD update':kind==='projects'?'project':'blog post') + ' — adjust filename, then Save.';
+  $('title').focus(); updateProjFields(); render(); refreshLists();
 }
-// keep blog filename in sync with title until saved
+// keep slug filename in sync with title until saved
 $('title').addEventListener('input', () => {
   if (!curPath && $('fpath').value.startsWith('_blog/')) $('fpath').value = `_blog/${slugify($('title').value)}.md`;
+  if (!curPath && $('fpath').value.startsWith('_projects/')) $('fpath').value = `_projects/${slugify($('title').value)}.md`;
 });
 
 async function save() {
@@ -157,6 +239,8 @@ async function save() {
     path, title:$('title').value, date:$('date').value,
     tags:$('tags').value.split(',').map(s=>s.trim()).filter(Boolean),
     published: !$('draft').checked,
+    status: isProjectPath() ? $('fstatus').value : undefined,
+    summary: isProjectPath() ? $('fsummary').value : undefined,
     body:$('md').value })});
   curPath = path;
   $('saveState').textContent = 'Saved ' + path + ' · ' + new Date().toLocaleTimeString();
@@ -284,6 +368,21 @@ async function uploadImage(file) {
     $('md').value = $('md').value.replace(`\n<!-- uploading ${file.name||'image'}… -->\n`, `\n![${alt.replace(/[\[\]]/g,'')}](${j.url})\n`);
     render(); toast('Image saved → ' + j.url);
   } catch(err) { toast('Upload failed: '+err.message); }
+}
+
+// --- delete (collection entries only; index pages are protected server-side) ---
+async function del() {
+  const path = ($('fpath').value||'').trim();
+  if (!path || !curPath) return toast('Open a saved entry to delete it');
+  if (!confirm(`Delete ${path} permanently?\nIts images under /assets/attachments/ go too.`)) return;
+  try {
+    await api('/api/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path})});
+    curPath = '';
+    $('fpath').value = ''; $('title').value = ''; $('date').value = ''; $('tags').value = '';
+    $('md').value = ''; $('saveState').textContent = 'Deleted ' + path;
+    updateProjFields(); render(); refreshLists(); gitStatus();
+    toast('Deleted ' + path);
+  } catch(e){ toast(e.message); }
 }
 
 // --- git ---

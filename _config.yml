@@ -19,6 +19,9 @@ collections:
   blog:
     output: true
     permalink: /blog/:name/
+  projects:
+    output: true
+    permalink: /projects/:name/
 
 # Local editor (not part of the site)
 exclude:
